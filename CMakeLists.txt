@@ -10,7 +10,6 @@ add_executable(OS_Experiment
         M1_pstree/M1_pstree.cpp
         M1_pstree/id.cpp
         M1_pstree/id.h
-        M1_pstree/screen.cpp
-        M1_pstree/screen.h
+        M1_pstree/error.h
 )
 target_link_libraries(OS_Experiment ${CURSES_LIBRARIES})

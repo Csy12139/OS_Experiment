@@ -4,28 +4,22 @@
 #include <map>
 #include <iostream>
 #include "id.h"
-#include "screen.h"
 
-void showPstree(int pid, struct ScreenCursor *SCursor, std::map<int, std::vector<int>> &mp_p,
+void showPstree(int pid, int deep, std::map<int, std::vector<int>> &mp_p,
                 std::map<int, std::vector<int>> &mp_t) {
     // 打印子进程
     if (mp_p.find(pid) != mp_p.end()) {
-        struct ScreenCursor *SCursor_1 = SCursor;
-        auto *SCursor_2 = new ScreenCursor;
-        auto is_end = mp_p[pid].end();
-        is_end--;
         std::vector<int>::iterator it_p;
         for (it_p = mp_p[pid].begin(); it_p != mp_p[pid].end(); it_p++) {
-            Screen_Write(*SCursor_1, ("-" + std::to_string(*it_p)).c_str()); // 打印该进程
-            *SCursor_2 = GetCursor();
-            showPstree(*it_p, SCursor_2, mp_p, mp_t);
-            if (it_p != is_end)SCursor_1->height = SCursor_2->height + 1;
+            for (int i = 0; i < deep; i++) std::cout << "  ";
+            std::cout << "+-" << *it_p << std::endl;
+//            if (it_p != mp_p[pid].begin())std::cout << std::endl;
+            showPstree(*it_p, deep + 1, mp_p, mp_t);
         }
     }
 }
 
 int main() {
-
     std::vector<int> pids;
     GetAllPids(&pids); // 获取所有进程的PID
     std::map<int, std::vector<int>> mp_p; // 父-子进程映射
@@ -56,11 +50,9 @@ int main() {
 //        }
 
     }
-    struct ScreenCursor SCursor{1, 1};
-    initscr();
-    showPstree(mp_p.begin()->first, &SCursor, mp_p, mp_t); //递归打印
-    getch(); // 等待用户输入
-    endwin();
+
+    showPstree(mp_p.begin()->first, 0, mp_p, mp_t); //递归打印
+
 
     return 0;
 

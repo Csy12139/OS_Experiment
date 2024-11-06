@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <map>
+#include "error.h"
 #include <cstring>
 
 // 是否是ID号
@@ -19,18 +20,21 @@ bool isID(char *str) {
 }
 
 // 获取所有进程的PID
-void GetAllPids(std::vector<int> *pids) {
+enum ERROR_INFO GetAllPids(std::vector<int> *pids) {
     DIR *processDir = opendir("/proc");
     if (processDir != nullptr) {
         struct dirent *readDir;
         while ((readDir = readdir(processDir)) != nullptr) {
             char *processID = readDir->d_name;
             if (isID(processID)) {
-                (*pids).push_back(std::stoi(processID));
+                pids->push_back(std::stoi(processID));
             }
         }
+    } else {
+        return OPEN_DIR_FAILED;
     }
     closedir(processDir); // 关闭目录
+    return OK;
 }
 
 // 获取该进程的父进程
@@ -61,8 +65,8 @@ int GetPPID(int pID) {
 }
 
 // 获得所有父-子进程映射
-void GetAllParent2ChildProcessMap(std::vector<int> pids, std::map<int, std::vector<int>> *mp) {
-    std::vector<int>::iterator it;
+void GetAllParent2ChildProcessMap(const std::vector<int> &pids, std::map<int, std::vector<int>> *mp) {
+    std::vector<int>::const_iterator it;
     for (it = pids.begin(); it != pids.end(); it++) {
         if (*it == 2) continue; // 忽略内核空间进程
         int ppID = GetPPID(*it); // 获取父进程
@@ -72,7 +76,7 @@ void GetAllParent2ChildProcessMap(std::vector<int> pids, std::map<int, std::vect
 }
 
 // 获取该进程下所有子线程
-void GetChildThreads(int pID, std::vector<int> *threads) {
+enum ERROR_INFO GetChildThreads(int pID, std::vector<int> *threads) {
     std::ostringstream oss;
     oss << "/proc/" << pID << "/task";
     std::string path = oss.str();
@@ -85,17 +89,20 @@ void GetChildThreads(int pID, std::vector<int> *threads) {
             if (isID(threadID)) {
                 int tID = std::stoi(threadID);
                 if (tID != pID) {
-                    (*threads).push_back(tID);
+                    threads->push_back(tID);
                 }
             }
         }
+    } else {
+        return OPEN_DIR_FAILED;
     }
     closedir(taskDir);
+    return OK;
 }
 
 // 获取所有进程-子线程映射
-void GetAllProcess2ThreadMap(std::vector<int> pids, std::map<int, std::vector<int>> *mp) {
-    std::vector<int>::iterator it;
+void GetAllProcess2ThreadMap(const std::vector<int> &pids, std::map<int, std::vector<int>> *mp) {
+    std::vector<int>::const_iterator it;
     for (it = pids.begin(); it != pids.end(); it++) {
         std::vector<int> threads;
         GetChildThreads(*it, &threads); // 获取该进程下所有子线程
